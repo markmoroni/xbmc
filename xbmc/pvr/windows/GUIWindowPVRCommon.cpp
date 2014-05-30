@@ -22,6 +22,7 @@
 
 #include "Application.h"
 #include "ApplicationMessenger.h"
+#include "dialogs/GUIDialogNumeric.h"
 #include "dialogs/GUIDialogKaiToast.h"
 #include "dialogs/GUIDialogOK.h"
 #include "dialogs/GUIDialogYesNo.h"
@@ -564,6 +565,36 @@ bool CGUIWindowPVRCommon::ActionDeleteChannel(CFileItem *item)
   UpdateData();
 
   return true;
+}
+
+bool CGUIWindowPVRCommon::ActionInputChannelNumber(int input, bool bGuideGrid)
+{
+  CStdString strInput = StringUtils::Format("%i", input);
+  if (CGUIDialogNumeric::ShowAndGetNumber(strInput, g_localizeStrings.Get(19103)))
+  {
+    int iChannelNumber = atoi(strInput.c_str());
+    if (iChannelNumber > 0)
+    {
+      int itemIndex = 0;
+      VECFILEITEMS items = m_parent->m_vecItems->GetList();
+      for(VECFILEITEMS::iterator it = items.begin(); it != items.end(); ++it)
+      {
+        if(((*it)->HasPVRChannelInfoTag() && (*it)->GetPVRChannelInfoTag()->ChannelNumber() == iChannelNumber) ||
+           ((*it)->HasEPGInfoTag() && (*it)->GetEPGInfoTag()->HasPVRChannel() && (*it)->GetEPGInfoTag()->PVRChannelNumber() == iChannelNumber))
+        {
+          // different handling for guide grid
+          if (bGuideGrid && m_parent->m_guideGrid)
+            m_parent->m_guideGrid->SetChannel((*(*it)->GetEPGInfoTag()->ChannelTag()));
+          else
+            m_parent->m_viewControl.SetSelectedItem(itemIndex);
+          return true;
+        }
+        itemIndex++;
+      }
+    }
+  }
+
+  return false;
 }
 
 bool CGUIWindowPVRCommon::UpdateEpgForChannel(CFileItem *item)
